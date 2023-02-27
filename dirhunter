@@ -1,0 +1,142 @@
+#!/bin/bash
+
+# Tool for Web Directory Enumeration
+# Developed by Cyberia
+
+echo -e "\x1B[34m   ___  _     __             __         \x1B[0m"
+echo -e "\x1B[34m  / _ \(_)___/ /  __ _____  / /____ ____\x1B[0m"
+echo -e "\x1B[34m / // / / __/ _ \/ // / _ \/ __/ -_) __/\x1B[0m"
+echo -e "\x1B[34m/____/_/_/ /_//_/\_,_/_//_/\__/\__/_/   \x1B[0m"
+echo -e "\x1B[34m     Tool for Web Content Scanning.     \x1B[0m"
+echo -e "\x1B[34m              by Cyberia.               \n\x1B[0m"
+
+SITE=$1
+ACCEPTED="200 403"
+AGENTS=.useragents
+DEFAULT=wordlists/common.txt
+IP=`echo $SITE | awk -F[/:] '{print $4}'`
+
+info(){
+
+        echo -e "\x1B[34m[*]\x1B[0m Start time: \x1B[1;37m`date "+%F %X"`\x1B[0m"                                                                       #Start time
+        echo -e "\x1B[34m[*]\x1B[0m Hunting subdirectories: \x1B[1;37m$SITE\x1B[0m \x1B[34m[`dig +short $IP @resolver1.opendns.com | tail -1`]\x1B[0m"  #Website info
+        echo -e "\x1B[34m[*]\x1B[0m Wordlist file: \x1B[1;37m$WD\x1B[0m \x1B[34m[`wc -l < $WD` lines]\x1B[0m\n"                                         #Wordlist info
+
+}
+
+check(){
+
+        echo $ACCEPTED | grep -o -q $STATUS                        #Checking whether the status code matches the $ACCEPTED variable
+        if [ $? -eq 0 ]; then
+                echo -e "\x1B[32m[+]\x1B[0m $SITE$word \x1B[32m[$STATUS]\x1B[0m"
+        fi
+
+        echo $STATUS | grep -o -q ^3                               #Checking for redirection
+        if [ $? -eq 0 ]; then
+                LOCATION=`curl -v $SITE$word |& grep -i location`  #Print "Location" header when found
+                LINK=`echo $LOCATION | grep -o "http[^ ]*"`        #Grep the URL in "Location" header
+                echo -e "\x1B[33m[*]\x1B[0m \x1B[1;37m$SITE$word\x1B[0m moved permanently. Redirecting to: \x1B[1;37m$LINK\x1B[0m \x1B[33m[$STATUS]\x1B[0m"
+        fi
+
+}
+
+while :; do
+
+        echo $SITE | egrep -q '^(http|https)://'  #Regex HTTP/HTTPS
+        if [ $? -eq "1" ]; then
+                echo -e "\x1B[31m[-]\x1B[0m Invalid URL format: \x1B[1;37m$SITE\x1B[0m\n\x1B[31m[-]\x1B[0m Use: “http://host/” or “https://host/”\x1B[0m\n\x1B[31m[-]\x1B[0m Exiting..."
+                break
+        fi
+
+        case $2 in
+        --wordlist|-w)
+
+                if [ -z $3 ]; then
+                        echo -e "\x1B[31m[-]\x1B[0m Missing operand.\x1B[0m\n\x1B[31m[-]\x1B[0m Exiting..."
+                        break
+
+                elif [ -f $3 ]; then
+                        WD=$3
+                        info
+                        for word in $(cat $WD); do
+                                STATUS=`curl -o /dev/null -s -w "%{http_code}\n" "$1$word"`
+                                check
+                        done
+                else
+                        echo -e "\x1B[31m[-]\x1B[0m Wordlist file not found.\x1B[0m\n\x1B[31m[-]\x1B[0m Exiting..."                     
+                        break
+                fi
+                shift
+
+        ;;
+        --agent|-a)
+
+                if [ -z "$3" ]; then
+                        echo -e "\x1B[31m[-]\x1B[0m Missing operand.\x1B[0m\n\x1B[31m[-]\x1B[0m Exiting..."
+                        break
+
+                else
+                        cat $AGENTS | grep -o -q "$3"$
+                        if [ $? -eq 0 ]; then
+                                WD=$DEFAULT
+                                info
+                                echo -e "\x1B[34m[*]\x1B[0m User-agent: \x1B[1;37m$3\x1B[0m\n"
+
+                                for word in $(cat $WD); do
+                                        STATUS=`curl -o /dev/null -A "$3" -s -w "%{http_code}\n" "$1$word"`
+                                        echo "$ACCEPTED" | grep -o -q "$STATUS"
+                                                if [ $? -eq 0 ]; then
+                                                        echo -e "\x1B[32m[+]\x1B[0m $SITE$word \x1B[32m[$STATUS]\x1B[0m"
+                                                else
+                                                        echo -e "\x1B[31m[-]\x1B[0m $SITE$word \x1B[31m[$STATUS]\x1B[0m"
+                                                fi
+                                done
+                        else
+                                echo -e "\x1B[31m[-]\x1B[0m Unknown user-agent. Try “dirhunter --help” for more information.\x1B[0m\n\x1B[31m[-]\x1B[0m Exiting..."
+                                break
+                        fi
+                fi
+                shift
+
+        ;;
+        --verbose|-v)
+
+                WD=$DEFAULT
+                info
+                for word in $(cat $WD); do
+                        STATUS=`curl -o /dev/null -s -w "%{http_code}\n" "$1$word"`
+                        echo "$ACCEPTED" | grep -o -q "$STATUS"
+                        if [ $? -eq 0 ]; then
+                                echo -e "\x1B[32m[+]\x1B[0m $SITE$word \x1B[32m[$STATUS]\x1B[0m"
+                        else
+                                echo -e "\x1B[31m[-]\x1B[0m $SITE$word \x1B[31m[$STATUS]\x1B[0m"
+                        fi
+                done
+                shift
+
+        ;;
+        j)
+
+                if [ -z $2 ] && [ -f $DEFAULT ]; then
+                        WD=$DEFAULT
+                        info
+                        for word in $(cat $WD); do
+                                STATUS=`curl -o /dev/null -s -w "%{http_code}\n" "$1$word"`
+                                check
+                        done
+                else
+                        echo -e "\x1B[31m[-]\x1B[0m Default wordlist not found, try passing a custom wordlist as a parameter.\n\x1B[31m[-]\x1B[0m Exiting..." 
+                        break
+                fi
+                shift
+
+        ;;
+        *)       
+
+                break
+
+        esac
+        shift
+
+done    
+                                     
