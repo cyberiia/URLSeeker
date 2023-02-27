@@ -9,5 +9,3 @@ if [ -f $PATHFILE ]; then
 else
         echo -e "\x1B[31m[-]\x1B[0mConfiguration file $PATHFILE not found.\x1B[0m\n\x1B[31m[-]\x1B[0m Exiting..."
 fi
-
-
