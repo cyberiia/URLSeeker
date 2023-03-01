@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Tool for Web Directory Enumeration
+# Tool for Web Content Enumeration
 # Developed by Cyberia
 
 echo -e "\x1B[34m   ___  _     __             __         \x1B[0m"
@@ -8,11 +8,11 @@ echo -e "\x1B[34m  / _ \(_)___/ /  __ _____  / /____ ____\x1B[0m"
 echo -e "\x1B[34m / // / / __/ _ \/ // / _ \/ __/ -_) __/\x1B[0m"
 echo -e "\x1B[34m/____/_/_/ /_//_/\_,_/_//_/\__/\__/_/   \x1B[0m"
 echo -e "\x1B[34m     Tool for Web Content Scanning.     \x1B[0m"
-echo -e "\x1B[34m              by Cyberia.               \n\x1B[0m"
+echo -e "\x1B[34m          github.com/cyberiia           \n\x1B[0m"
 
 SITE=$1
 ACCEPTED="200 403"
-AGENTS=.useragents
+AGENTS=useragents
 DEFAULT=wordlists/common.txt
 IP=`echo $SITE | awk -F[/:] '{print $4}'`
 
